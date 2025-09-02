@@ -1,7 +1,8 @@
-import { Stack } from 'expo-router';
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Stack } from "expo-router";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { AuthProvider } from "@/lib/auth-context";
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -9,7 +10,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace('/auth'); // Redirect after mount
+      router.replace("/auth"); // Redirect after mount
     }
   });
 
@@ -21,11 +22,13 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    //<RouteGuard>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    //</RouteGuard>
+    <AuthProvider>
+      <RouteGuard>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </RouteGuard>
+    </AuthProvider>
   );
 }

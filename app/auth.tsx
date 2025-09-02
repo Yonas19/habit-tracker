@@ -1,4 +1,6 @@
+import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { View, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { Button, Text, TextInput, useTheme } from "react-native-paper";
 
@@ -8,10 +10,12 @@ const AuthScreen = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
+  const router = useRouter();
 
   const handleSwitchMode = () => {
     setIsSignUp((prev) => !prev);
   };
+  const { signIn, signUp } = useAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -23,6 +27,20 @@ const AuthScreen = () => {
       return;
     }
     setError(null);
+    if (isSignUp) {
+      const signUpError = await signUp(email, password);
+      if (signUpError) {
+        setError(signUpError);
+        return
+      }
+    } else {
+      const signInError = await signIn(email, password);
+      if (signInError) {
+        setError(signInError);
+        return
+      }
+      router.replace('/')
+    }
   };
 
   return (
