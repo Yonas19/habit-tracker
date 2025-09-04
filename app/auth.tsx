@@ -6,16 +6,16 @@ import { Button, Text, TextInput, useTheme } from "react-native-paper";
 
 const AuthScreen = () => {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const router = useRouter();
+  const { signIn, signUp } = useAuth();
 
   const handleSwitchMode = () => {
     setIsSignUp((prev) => !prev);
   };
-  const { signIn, signUp } = useAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -27,19 +27,20 @@ const AuthScreen = () => {
       return;
     }
     setError(null);
+ 
     if (isSignUp) {
       const signUpError = await signUp(email, password);
       if (signUpError) {
         setError(signUpError);
-        return
+        return;
       }
     } else {
       const signInError = await signIn(email, password);
       if (signInError) {
         setError(signInError);
-        return
+        return;
       }
-      router.replace('/')
+      router.replace("/");
     }
   };
 
@@ -52,7 +53,6 @@ const AuthScreen = () => {
         <Text style={styles.title} variant="headlineMedium">
           {isSignUp ? "Create Account" : "Welcome back !"}
         </Text>
-
 
         <TextInput
           label="Email"
@@ -70,6 +70,7 @@ const AuthScreen = () => {
           keyboardType="default" // ✅ fixed typo (was email-adress)
           mode="outlined"
           placeholder="Password"
+          secureTextEntry
           onChangeText={setPassword}
           value={password}
         />
@@ -77,11 +78,17 @@ const AuthScreen = () => {
         <Button mode="contained" onPress={handleAuth}>
           {isSignUp ? "Signup" : "Sign In"}
         </Button>
-        {error && <Text style={{ color: theme.colors.error, textAlign:'center' }}>{error}</Text>}
+        {error && (
+          <Text style={{ color: theme.colors.error, textAlign: "center" }}>
+            {error}
+          </Text>
+        )}
 
         <Button mode="text" onPress={handleSwitchMode}>
-          {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Signup"}
-        </Button>            
+          {isSignUp
+            ? "Already have an account? Sign in"
+            : "Don't have an account? Signup"}
+        </Button>
       </View>
     </KeyboardAvoidingView>
   );
