@@ -6,18 +6,18 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  
-  const { user } = useAuth();
+
+  const { user, isLoadingUser } = useAuth();
   const segments = useSegments();
 
   useEffect(() => {
     const inAuthGroup = segments[0] === "auth";
-    if (!user && !inAuthGroup) {
-      setTimeout(() => router.replace("/auth"), 0);
-    }else if (user && inAuthGroup) {
-      setTimeout(() => router.replace("/"), 0);
+    if (!user && !inAuthGroup && !isLoadingUser) {
+      router.replace("/auth");
+    } else if (user && inAuthGroup && !isLoadingUser) {
+      router.replace("/");
     }
-  },[user,segments]);
+  }, [user, segments]);
 
   // **Always render children immediately** so RootLayout mounts properly
   return <>{children}</>;
