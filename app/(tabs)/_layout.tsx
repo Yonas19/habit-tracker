@@ -1,12 +1,12 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Tabs } from "expo-router";
+import React from "react";
+import { Platform } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { HapticTab } from "@/components/HapticTab";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import TabBarBackground from "@/components/ui/TabBarBackground";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -14,23 +14,73 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
         tabBarButton: HapticTab,
-      
-      
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Today's Habit",
+          tabBarIcon: ({ color,size}) => (
+            <MaterialCommunityIcons
+              name="calendar-today"
+              size={size}
+              color={color}
+            />
+          ),
+          headerStyle: { backgroundColor: "#f5f5f5" },
+          tabBarStyle: {
+            backgroundColor: "#f5f5f5",
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          tabBarActiveTintColor: "#6200ee",
+          tabBarInactiveTintColor: "#666666",
         }}
       />
-      <Tabs.Screen
-        name="explore"
+       <Tabs.Screen
+        name="streaks"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "streaks",
+          tabBarIcon: ({ color,size}) => (
+            <MaterialCommunityIcons
+              name="chart-line"
+              size={size}
+              color={color}
+            />
+          ),
+          headerStyle: { backgroundColor: "#f5f5f5" },
+          tabBarStyle: {
+            backgroundColor: "#f5f5f5",
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          tabBarActiveTintColor: "#6200ee",
+          tabBarInactiveTintColor: "#666666",
+        }}
+      />
+       <Tabs.Screen
+        name="add-habit"
+        options={{
+          title: "Add Habit",
+          tabBarIcon: ({ color,size}) => (
+            <MaterialCommunityIcons
+              name="plus-circle"
+              size={size}
+              color={color}
+            />
+          ),
+          headerStyle: { backgroundColor: "#f5f5f5" },
+          tabBarStyle: {
+            backgroundColor: "#f5f5f5",
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          tabBarActiveTintColor: "#6200ee",
+          tabBarInactiveTintColor: "#666666",
         }}
       />
     </Tabs>
