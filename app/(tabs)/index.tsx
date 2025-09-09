@@ -1,6 +1,5 @@
-import { View, StyleSheet, ScrollView } from "react-native";
-import React, { useEffect, useState } from "react";
-
+import React, { useEffect, useRef, useState } from "react";
+import { View, StyleSheet } from "react-native";
 import { Button, Surface, Text } from "react-native-paper";
 import { useAuth } from "@/lib/auth-context";
 import client, {
@@ -12,32 +11,47 @@ import client, {
 import { Query } from "react-native-appwrite";
 import { Habit } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ScrollView } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 
-const Index = () => {
+const index = () => {
   const { signOut, user } = useAuth();
-  const [habits, setHabits] = useState<Habit[]>([]);
+  const [habits, setHabits] = useState<Habit[]>();
+  const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
 
   useEffect(() => {
-    if (!user) return;
-
-    fetchHabits(); // initial load
-
-    const channel = `databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
-    const unsubscribe = client.subscribe(
-      channel,
-      (response: RealtimeResponse) => {
-        const ev = response.events.join(" ");
-        if (
-          ev.includes("documents.*.create") ||
-          ev.includes("documents.*.update") ||
-          ev.includes("documents.*.delete")
-        ) {
-          fetchHabits();
+    if (user) {
+      const channel = `databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
+      const habitSubscription = client.subscribe(
+        channel,
+        (response: RealtimeResponse) => {
+          if (
+            response.events.includes(
+              "databases.*.collections.*.documents.*.create"
+            )
+          ) {
+            fetchHabits();
+          } else if (
+            response.events.includes(
+              "databses.*.collections.*.documents.*.update"
+            )
+          ) {
+            fetchHabits();
+          } else if (
+            response.events.includes(
+              "databases.*.collections.*.documents.*.delete"
+            )
+          ) {
+            fetchHabits();
+          }
         }
-      }
-    );
+      );
 
-    return () => unsubscribe?.(); // cleanup
+      fetchHabits();
+      return () => {
+        habitSubscription();
+      };
+    }
   }, [user]);
 
   const fetchHabits = async () => {
@@ -45,69 +59,76 @@ const Index = () => {
       const response = await databases.listDocuments(
         DATABASE_ID,
         HABITS_COLLECTION_ID,
-        [Query.equal("user_id", user!.$id)]
+        [Query.equal("user_id", user?.$id ?? "")]
       );
+      console.log(response.documents);
       setHabits(response.documents as Habit[]);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
     }
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text variant="headlineSmall" style={styles.title}>
           Today Habits
         </Text>
-        <Button mode="text" onPress={signOut} icon="logout">
-          Sign out
+        <Button mode="text" onPress={signOut} icon={"logout"}>
+          Sign out{" "}
         </Button>
       </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {habits.length === 0 ? (
+      <ScrollView showsHorizontalScrollIndicator={false}>
+        {habits?.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              No habits yet. Add your first habit.
+              {" "}
+              No habits yet. Add your first Habit
             </Text>
           </View>
         ) : (
-          habits.map((h) => (
-            <Surface key={h.$id} style={styles.card} elevation={0}>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{h.title}</Text>
-                <Text style={styles.cardDescription}>{h.description}</Text>
-
-                <View style={styles.cardFooter}>
-                  <View style={styles.streakBadge}>
-                    <MaterialCommunityIcons
-                      name="fire"
-                      size={18}
-                      color="#ff9800"
-                    />
-                    <Text style={styles.streakText}>
-                      {h.streak_count} day streak
-                    </Text>
-                  </View>
-
-                  <View style={styles.frequencyBadge}>
-                    <Text>
-                      {h.frequency.charAt(0).toUpperCase() +
-                        h.frequency.slice(1)}
-                    </Text>
+          habits?.map((habit, key) => (
+            <Swipeable
+              ref={(ref) => {
+                swipeableRefs.current[habit.$id] = ref;
+              }}
+              key={key}
+            >
+              <Surface style={styles.card} elevation={0}>
+                <View key={key} style={styles.cardContent}>
+                  <Text style={styles.cardTitle}> {habit.title}</Text>
+                  <Text style={styles.cardDescription}>
+                    {" "}
+                    {habit.description}
+                  </Text>
+                  <View style={styles.cardFooter}>
+                    <View style={styles.streakBadge}>
+                      <MaterialCommunityIcons
+                        name="fire"
+                        size={18}
+                        color={"#ff9800"}
+                      />
+                      <Text style={styles.streakText}>
+                        {habit.streak_count} day streak
+                      </Text>
+                    </View>
+                    <View>
+                      <View style={styles.frequencyBadge}>
+                        <Text>
+                          {habit.frequency.charAt(0).toUpperCase() +
+                            habit.frequency.slice(1)}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </Surface>
+              </Surface>
+            </Swipeable>
           ))
         )}
       </ScrollView>
     </View>
   );
 };
-
-export default Index;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -128,7 +149,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#ffffff",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
@@ -172,11 +196,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   emptyState: {
-    marginTop: 50,
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
+    marginTop: 50,
   },
   emptyStateText: {
     fontSize: 16,
     color: "#999999",
   },
 });
+
+export default index;
