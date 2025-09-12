@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Animated } from "react-native";
 import { Button, Surface, Text } from "react-native-paper";
 import { useAuth } from "@/lib/auth-context";
 import client, {
   DATABASE_ID,
   HABITS_COLLECTION_ID,
+  COMPLETIONS_COLLECTION_ID,
   RealtimeResponse,
   databases,
 } from "@/lib/appwrite";
-import { Query } from "react-native-appwrite";
+import { ID, Query } from "react-native-appwrite";
 import { Habit } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView } from "react-native";
@@ -67,6 +68,58 @@ const index = () => {
       console.error(error);
     }
   };
+
+  const handleDeleteHabit = async (id: string) => {
+    try {
+      await databases.deleteDocument(DATABASE_ID, HABITS_COLLECTION_ID, id);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleCompleteHabit = async (id: string) => {
+    if (!user) return;
+    
+    try {
+
+      const currentDate = new Date().toISOString()
+      await databases.createDocument(DATABASE_ID, COMPLETIONS_COLLECTION_ID,
+        ID.unique(),
+        {
+          habit_id: id,
+          user_id: user.$id,
+          completed_at : currentDate,
+      }
+      );
+
+      const habit = habits?.find((h) => h.$id === id);
+      if (!habit) return;
+
+      await databases.updateDocument(DATABASE_ID, HABITS_COLLECTION_ID, id, {
+        streak_count: habit.streak_count + 1,
+        last_completed: currentDate,  
+      })
+      
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const renderRightActions = () => (
+    <View style={styles.swipeActionRight}>
+      <MaterialCommunityIcons
+        name="check-circle-outline"
+        size={32}
+        color="#fff"
+      />
+    </View>
+  );
+
+  const renderLeftActions = () => (
+    <View style={styles.swipeActionLeft}>
+      <MaterialCommunityIcons name="trash-can-outline" size={32} color="#fff" />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -77,7 +130,7 @@ const index = () => {
           Sign out{" "}
         </Button>
       </View>
-      <ScrollView showsHorizontalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {habits?.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
@@ -92,6 +145,18 @@ const index = () => {
                 swipeableRefs.current[habit.$id] = ref;
               }}
               key={key}
+              overshootLeft={false}
+              overshootRight={false}
+              renderLeftActions={renderLeftActions}
+              renderRightActions={renderRightActions}
+              onSwipeableOpen={(direction) => {
+                if (direction === "left") {
+                  handleDeleteHabit(habit.$id);
+                } else if (direction === "right") { 
+                  handleCompleteHabit(habit.$id);
+                }
+                swipeableRefs.current[habit.$id]?.close();
+              }}
             >
               <Surface style={styles.card} elevation={0}>
                 <View key={key} style={styles.cardContent}>
@@ -204,6 +269,26 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     color: "#999999",
+  },
+  swipeActionRight: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+    backgroundColor: "#4caf50",
+    flex: 1,
+    borderRadius: 8,
+    paddingLeft: 20,
+    marginTop: 2,
+    marginBottom: 19,
+  },
+  swipeActionLeft: {
+    justifyContent: "center",
+    alignItems: "flex-start",
+    backgroundColor: "#f44336",
+    flex: 1,
+    borderRadius: 18,
+    paddingRight: 16,
+    marginTop: 2,
+    marginBottom: 19,
   },
 });
 
